@@ -20,9 +20,10 @@ inflation_layer:
   inflation_radius:     0.35  # max. distance from an obstacle at which costs are incurred for planning paths.
   
 prohibition_layer:
-  enabled: true 
+  enabled: false
   visualize: false # 隐藏虚拟墙显示
-
+  
+  
 static_layer:
   enabled:              true
   map_topic:            "/map"

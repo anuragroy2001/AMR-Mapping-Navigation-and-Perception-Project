@@ -10,6 +10,8 @@ global_costmap:
    origin_y: -20.0
    static_map: true
    rolling_window: false
+   track_unknown_space: true
+
 
    plugins:
    - {name: static_layer, type: "costmap_2d::StaticLayer"}
