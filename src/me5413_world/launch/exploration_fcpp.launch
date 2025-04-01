@@ -1,0 +1,41 @@
+<launch>
+    <!-- Declare required args -->
+    <arg name="map_file" default="$(find me5413_world)/maps/map.yaml"/>
+    <arg name="open_rviz" default="true"/>
+
+    <!-- Use simulation time -->
+    <param name="/use_sim_time" value="true"/>
+    
+    
+    <!-- Launch Gazebo world -->
+    <include file="$(find gazebo_ros)/launch/empty_world.launch">
+        <arg name="world_name" value="$(find me5413_world)/worlds/me5413_project_2425.world"/>
+        <arg name="debug" value="false" />
+        <arg name="gui" value="true" />
+        <arg name="paused" value="false"/>
+        <arg name="use_sim_time" value="true"/>
+        <arg name="headless" value="false"/>
+    </include>
+
+    <!-- Spawn Jackal robot -->
+    <include file="$(find me5413_world)/launch/include/spawn_jackal.launch"/>
+
+    <!-- Load mission-specific parameters -->
+    <rosparam command="load" file="$(find me5413_world)/config/config.yaml" />
+
+    <!-- Launch navigation stack (with SpiralSTC) -->
+    <include file="$(find me5413_world)/launch/navigation_fcpp.launch">
+        <arg name="map_file" value="$(arg map_file)"/>
+    </include>
+
+    <!-- Coverage path planner -->
+    <node pkg="clean_robot" type="path_planning_node" respawn="false" name="path_planning_node" output="screen" clear_params="true">
+        <rosparam file="$(find me5413_world)/params/common_costmap_config.yaml" command="load" ns="cleaning_costmap" />
+        <rosparam file="$(find clean_robot)/config/cleaning_costmap_params.yaml" command="load" />
+    </node>
+
+    <!-- Next goal publisher -->
+    <param name="/NextGoal/tolerance_goal" value="0.25" />
+    <node pkg="clean_robot" type="next_goal" respawn="true" name="next_goal" output="screen" />
+</launch>
+
