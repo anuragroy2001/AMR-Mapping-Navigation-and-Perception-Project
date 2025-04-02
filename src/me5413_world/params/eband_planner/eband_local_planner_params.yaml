@@ -1,0 +1,15 @@
+EBandPlannerROS:
+  xy_goal_tolerance: 0.3
+  yaw_goal_tolerance: 0.2
+  max_vel_lin: 0.6
+  max_vel_th: 1.0
+  min_vel_lin: 0.1
+  min_vel_th: 0.2
+  min_in_place_vel_th: 0.3
+  k_prop: 4.0
+  k_damp: 3.5
+  Ctrl_Rate: 10.0
+  acc_max: 0.5
+  bubble_velocity_multiplier: 2.0
+  rotation_correction_threshold: 0.2
+

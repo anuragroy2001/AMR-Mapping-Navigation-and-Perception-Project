@@ -1,0 +1,41 @@
+<launch>
+    <!-- Declare required args -->
+    <arg name="map_file" default="$(find me5413_world)/maps/map.yaml"/>
+    <arg name="open_rviz" default="true"/>
+
+    <!-- Use simulation time -->
+    <param name="/use_sim_time" value="true"/>
+    
+    
+    <!-- Launch Gazebo world -->
+    <include file="$(find gazebo_ros)/launch/empty_world.launch">
+        <arg name="world_name" value="$(find me5413_world)/worlds/me5413_project_2425.world"/>
+        <arg name="debug" value="false" />
+        <arg name="gui" value="true" />
+        <arg name="paused" value="false"/>
+        <arg name="use_sim_time" value="true"/>
+        <arg name="headless" value="false"/>
+    </include>
+
+    <!-- Spawn Jackal robot -->
+    <include file="$(find me5413_world)/launch/include/spawn_jackal.launch"/>
+
+    <!-- Load mission-specific parameters -->
+    <rosparam command="load" file="$(find me5413_world)/config/config.yaml" />
+
+    <!-- Launch navigation stack -->
+    <include file="$(find me5413_world)/launch/navigation_eband.launch">
+        <arg name="map_file" value="$(arg map_file)"/>
+    </include>
+
+    <!-- Run nav_client.py (your navigation goal executor) -->
+    <node pkg="me5413_world" type="nav_client.py" name="nav_client" output="screen">
+        <param name="use_sim_time" value="true"/>
+    </node>
+
+
+    <!-- Next goal publisher -->
+    <param name="/NextGoal/tolerance_goal" value="10" />
+    <node pkg="clean_robot" type="next_goal" respawn="true" name="next_goal" output="screen" />
+</launch>
+
