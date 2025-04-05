@@ -110,7 +110,7 @@ class ConeDetection():
                 best_max_loc = max_loc
         
         if max_match_val >= 0.50:
-            rospy.loginfo(f"Cone detected in image!! Confidence = {max_match_val:.3f}")
+           # rospy.loginfo(f"Cone detected in image!! Confidence = {max_match_val:.3f}")
             x, y = best_max_loc
             width = int(original_width * best_scale)
             height = int(original_height * best_scale)
@@ -132,7 +132,7 @@ class ConeDetection():
             depth = self.depth_curr[v,u]
 
             if depth == 0 or np.isnan(depth):
-                rospy.logerr("Invalid or missing depth at center pixel.")
+                #rospy.logerr("Invalid or missing depth at center pixel.")
                 return
             
             fx = self.camera_info.K[0]
@@ -196,7 +196,7 @@ class ConeDetection():
             avg_point.point.z = avg_pos[2]
 
             self.avg_pub.publish(avg_point)
-            rospy.loginfo("Average Position Published to cone_expected_position")
+            #rospy.loginfo("Average Position Published to cone_expected_position")
 
         except Exception as e:
             rospy.logwarn(f"[TF ERROR] Cone detection transform failed: {str(e)}")

@@ -53,13 +53,13 @@ class BoxCoordinates():
         self.processing = True
 
         try:
-            rospy.loginfo(f"Received synced images: RGB shape={rgb_data.height}x{rgb_data.width}, encoding={rgb_data.encoding}")
+            #rospy.loginfo(f"Received synced images: RGB shape={rgb_data.height}x{rgb_data.width}, encoding={rgb_data.encoding}")
             self.img_stamp = rgb_data.header.stamp
 
-            print("Converting ROS image to OpenCV image")
+            #print("Converting ROS image to OpenCV image")
             self.img_curr = self.bridge.imgmsg_to_cv2(rgb_data, "bgr8")  # Changed to "bgr8" for consistency
             self.depth_curr = self.bridge.imgmsg_to_cv2(depth_data, desired_encoding="32FC1")
-            print(f"OpenCV image shape: {self.img_curr.shape}, Depth image shape: {self.depth_curr.shape}")
+            #print(f"OpenCV image shape: {self.img_curr.shape}, Depth image shape: {self.depth_curr.shape}")
 
             self.get_coords()
         
@@ -80,9 +80,9 @@ class BoxCoordinates():
             return
 
         
-        rospy.loginfo("Image detected, using ocr to detect numbers.....")
+        #rospy.loginfo("Image detected, using ocr to detect numbers.....")
         result = self.ocr_detector.readtext(self.img_curr, batch_size=2, allowlist="0123456789")
-        rospy.loginfo("Numbers detected, proceeding to filter and transfrom.....")
+        #rospy.loginfo("Numbers detected, proceeding to filter and transfrom.....")
         fx = self.camera_info.K[0]
         fy = self.camera_info.K[4]
         cx = self.camera_info.K[2]
@@ -136,13 +136,16 @@ class BoxCoordinates():
                 X,Y,Z = transformed_pose.pose.position.x, transformed_pose.pose.position.y, transformed_pose.pose.position.z
 
                 self.coords.append((X,Y,Z))
+                if len(self.coords)>=10:
+                    del self.coords[0]
+                     
         
-        rospy.loginfo(f"The coordinates of {self.number} detected till now are: {self.coords}")
+        #rospy.loginfo(f"The coordinates of {self.number} detected till now are: {self.coords}")
 
         if self.coords:
             final_x, final_y, final_z = np.array(self.coords).mean(axis=0)
         else:
-            rospy.logwarn("No valid coordinates detected to publish.")
+            #rospy.logwarn("No valid coordinates detected to publish.")
             return
 
         final_coords = PoseStamped()

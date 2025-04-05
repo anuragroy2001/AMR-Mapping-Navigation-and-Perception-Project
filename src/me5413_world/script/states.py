@@ -35,7 +35,6 @@ class Jackal_Robot():
         self.target_pose.pose.orientation.w = goal[6]
         self.goal.target_pose = self.target_pose
         self.client.send_goal(self.goal)
-        
     
     def wait_for_server(self):
         if not self.client.wait_for_server(timeout=rospy.Duration(5)):
@@ -82,7 +81,7 @@ class Jackal_Robot():
         
 
 class Task1_obs_avoid_nav(smach.State):
-    def __init__(self,goal=[19, -19, 0.0, 0.0, 0.0, -1.0, 0.1]):
+    def __init__(self,goal=[19, -21, 0.0, 0.0, 0.0, -1.0, 0.0]):
         smach.State.__init__(self,outcomes=['goal_reached','failed','stopped'])
         self.timeout = rospy.Duration(240)
         self.goal=goal
@@ -171,7 +170,6 @@ class Task3_move_to_bridge(smach.State):
     def callback(self, msg):
         """Callback for the subscriber"""
         self.data_received = msg
-        rospy.loginfo("Received data: %s", self.data_received)
 
     def extract_msg(self,msg):
         return [10, msg.point.y, 0,0,0,-1,0]
@@ -203,7 +201,6 @@ class Task3_move_to_bridge(smach.State):
             rospy.logerr("ROS Interrupt Exception")
             self.robot.client.cancel_all_goals()
             return 'stopped'
-
 
 class Task4_unlock_bridge(smach.State):
     def __init__(self):
@@ -243,7 +240,7 @@ class Task4_unlock_bridge(smach.State):
         try:
             rospy.loginfo("Executing Task4_pass_bridge")
             while self.current_pose is None or self.current_pose > 8:
-                self.robot.move_forward(vel_x=0.7)
+                self.robot.move_forward(vel_x=0.5)
                 self.current_pose=self.get_current_x_position()
                 rospy.loginfo("Current x position: %s", self.current_pose)
                 rospy.sleep(0.1)
@@ -262,46 +259,54 @@ class Task4_unlock_bridge(smach.State):
             rospy.logerr("Failed to execute Task4: %s", str(e))
             return 'failed'
 
-
 class Task5_choose_box(smach.State):
     def __init__(self,box_waypoint_list):
-        smach.State.__init__(self,outcomes=['done', 'failed'])
+        smach.State.__init__(self,outcomes=['goal_reached','stopped','failed'])
         self.robot=Jackal_Robot()
         self.waypoint_list=box_waypoint_list
         self.timeout = 10  # seconds
-        self.box_coord_sub=rospy.Subscriber("/percep/box_coord", PoseStamped,self.box_coordinates_callback)
-        self.box_coordinates=None
+        self.box_coord_sub=rospy.Subscriber("/percep/bfailedox_coord", PoseStamped,self.box_coordinates_callback)
+        self.box_y_coordinate=None
         
     def box_coordinates_callback(self, msg):
-        if self.box_coordinates is None:
-            self.box_coordinates = msg
-            rospy.loginfo("Received box coordinates: %s", self.box_coordinates)
+        if self.box_y_coordinate is None:
+            self.box_y_coordinate = msg.pose.position.y
+            rospy.loginfo("Received box coordinates: %s", self.box_y_coordinate)
 
+    
     
     def execute(self,userdata):
         box_coord_script=BoxCoordinates()
-        while self.box_coordinates is None:
-            rospy.sleep(0.1)
-        self.robot.send_goal(self.waypoint_list[0])
-        
-        
-        
-        # if not self.wait_for_connection():
-        #     rospy.logerr("Failed to connect to subscribers for topic %s", self.topic_name)
-        #     return 'failed'
-        # try:
-        #     rospy.loginfo("Executing Task2_unlock_bridge")
-        #     self.publisher.publish(self.ros_msg)
-        #     rospy.loginfo("Published message to topic: %s", self.topic_name)
-        #     rospy.sleep(0.05)  # Wait for a moment to ensure the message is received
-        #     return 'done'
-        # except Exception as e:
-        #     rospy.logerr("Failed to publish message: %s", str(e))
-        #     return 'failed'
-        return 'done'
+        try:
+            for waypoint in self.waypoint_list:
+                self.robot.send_goal(waypoint)
+                last_state=None
+                while not rospy.is_shutdown():
+                    last_state,_=self.robot.check_state(last_state)
+                    rospy.sleep(0.1)
+                    if last_state=='goal_reached':
+                        rospy.loginfo("goal_reached")
+                        rospy.sleep(0.1)
+                    break
+                if self.box_y_coordinate is not None:
+                    self.robot.send_goal([1,self.box_y_coordinate,0,0,0,-1,0])
+                    break
+            while not rospy.is_shutdown():
+                last_state,terminate_token=self.robot.check_state(last_state)
+                rospy.sleep(0.5)
+                if terminate_token:
+                    return last_state
+
+
+
+
+        except Exception as e:
+            return 'stopped'
+            
 
     
 
 
-if __name__=="__main__":
+if __name__=="__main__":        
+
     pass

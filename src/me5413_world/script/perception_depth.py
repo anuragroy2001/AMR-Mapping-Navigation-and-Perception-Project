@@ -94,7 +94,7 @@ class Image_segmentation:
             if 0 <= y_center < self.depth_curr.shape[0] and 0 <= x_center < self.depth_curr.shape[1]:
                 depth = self.depth_curr[y_center, x_center]
                 if not np.isfinite(depth) or depth <= 0 or depth > depth_thresh:
-                    rospy.logwarn(f"Invalid or out-of-range depth at ({x_center}, {y_center}): {depth}")
+                    #rospy.logwarn(f"Invalid or out-of-range depth at ({x_center}, {y_center}): {depth}")
                     continue
                 
             #rospy.loginfo("Close number detected, proceeding to transform coordinates and perform checks")

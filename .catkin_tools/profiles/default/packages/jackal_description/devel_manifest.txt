@@ -1,5 +1,5 @@
 jackal_description
-/home/bobby/ME5413_Final_Project/devel/.private/jackal_description/cmake.lock /home/bobby/ME5413_Final_Project/devel/./cmake.lock
-/home/bobby/ME5413_Final_Project/devel/.private/jackal_description/share/jackal_description/cmake/jackal_descriptionConfig.cmake /home/bobby/ME5413_Final_Project/devel/share/jackal_description/cmake/jackal_descriptionConfig.cmake
-/home/bobby/ME5413_Final_Project/devel/.private/jackal_description/share/jackal_description/cmake/jackal_descriptionConfig-version.cmake /home/bobby/ME5413_Final_Project/devel/share/jackal_description/cmake/jackal_descriptionConfig-version.cmake
-/home/bobby/ME5413_Final_Project/devel/.private/jackal_description/lib/pkgconfig/jackal_description.pc /home/bobby/ME5413_Final_Project/devel/lib/pkgconfig/jackal_description.pc
+/home/wang/ME5413_Final_Project/devel/.private/jackal_description/cmake.lock /home/wang/ME5413_Final_Project/devel/./cmake.lock
+/home/wang/ME5413_Final_Project/devel/.private/jackal_description/lib/pkgconfig/jackal_description.pc /home/wang/ME5413_Final_Project/devel/lib/pkgconfig/jackal_description.pc
+/home/wang/ME5413_Final_Project/devel/.private/jackal_description/share/jackal_description/cmake/jackal_descriptionConfig.cmake /home/wang/ME5413_Final_Project/devel/share/jackal_description/cmake/jackal_descriptionConfig.cmake
+/home/wang/ME5413_Final_Project/devel/.private/jackal_description/share/jackal_description/cmake/jackal_descriptionConfig-version.cmake /home/wang/ME5413_Final_Project/devel/share/jackal_description/cmake/jackal_descriptionConfig-version.cmake
