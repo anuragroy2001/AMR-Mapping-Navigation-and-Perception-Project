@@ -7,11 +7,12 @@ import actionlib
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from geometry_msgs.msg import PointStamped, PoseStamped, Twist
 from nav_msgs.msg import Odometry
-from std_msgs.msg import String,Bool
+from std_msgs.msg import String,Bool,Int32MultiArray
 from perception_depth import Image_segmentation
 from threading import Thread
 from cone_perception import ConeDetection
 import tf
+from box_coordinates import BoxCoordinates
 
 
 class Jackal_Robot():
@@ -241,8 +242,8 @@ class Task4_unlock_bridge(smach.State):
             return 'failed'
         try:
             rospy.loginfo("Executing Task4_pass_bridge")
-            while self.current_pose is None or self.current_pose > 7.5:
-                self.robot.move_forward(vel_x=1)
+            while self.current_pose is None or self.current_pose > 8:
+                self.robot.move_forward(vel_x=0.7)
                 self.current_pose=self.get_current_x_position()
                 rospy.loginfo("Current x position: %s", self.current_pose)
                 rospy.sleep(0.1)
@@ -265,12 +266,25 @@ class Task4_unlock_bridge(smach.State):
 class Task5_choose_box(smach.State):
     def __init__(self,box_waypoint_list):
         smach.State.__init__(self,outcomes=['done', 'failed'])
+        self.robot=Jackal_Robot()
         self.waypoint_list=box_waypoint_list
         self.timeout = 10  # seconds
+        self.box_coord_sub=rospy.Subscriber("/percep/box_coord", PoseStamped,self.box_coordinates_callback)
+        self.box_coordinates=None
         
+    def box_coordinates_callback(self, msg):
+        if self.box_coordinates is None:
+            self.box_coordinates = msg
+            rospy.loginfo("Received box coordinates: %s", self.box_coordinates)
 
     
     def execute(self,userdata):
+        box_coord_script=BoxCoordinates()
+        while self.box_coordinates is None:
+            rospy.sleep(0.1)
+        self.robot.send_goal(self.waypoint_list[0])
+        
+        
         
         # if not self.wait_for_connection():
         #     rospy.logerr("Failed to connect to subscribers for topic %s", self.topic_name)
