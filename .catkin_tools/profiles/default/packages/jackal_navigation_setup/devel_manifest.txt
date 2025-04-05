@@ -1,5 +1,0 @@
-jackal_navigation_setup
-/home/bobby/ME5413_Final_Project/devel/.private/jackal_navigation_setup/cmake.lock /home/bobby/ME5413_Final_Project/devel/./cmake.lock
-/home/bobby/ME5413_Final_Project/devel/.private/jackal_navigation_setup/share/jackal_navigation_setup/cmake/jackal_navigation_setupConfig.cmake /home/bobby/ME5413_Final_Project/devel/share/jackal_navigation_setup/cmake/jackal_navigation_setupConfig.cmake
-/home/bobby/ME5413_Final_Project/devel/.private/jackal_navigation_setup/share/jackal_navigation_setup/cmake/jackal_navigation_setupConfig-version.cmake /home/bobby/ME5413_Final_Project/devel/share/jackal_navigation_setup/cmake/jackal_navigation_setupConfig-version.cmake
-/home/bobby/ME5413_Final_Project/devel/.private/jackal_navigation_setup/lib/pkgconfig/jackal_navigation_setup.pc /home/bobby/ME5413_Final_Project/devel/lib/pkgconfig/jackal_navigation_setup.pc

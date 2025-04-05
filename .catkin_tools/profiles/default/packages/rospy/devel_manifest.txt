@@ -1,5 +1,0 @@
-rospy
-/home/bobby/ME5413_Final_Project/devel/.private/rospy/cmake.lock /home/bobby/ME5413_Final_Project/devel/./cmake.lock
-/home/bobby/ME5413_Final_Project/devel/.private/rospy/share/rospy/cmake/rospyConfig.cmake /home/bobby/ME5413_Final_Project/devel/share/rospy/cmake/rospyConfig.cmake
-/home/bobby/ME5413_Final_Project/devel/.private/rospy/share/rospy/cmake/rospyConfig-version.cmake /home/bobby/ME5413_Final_Project/devel/share/rospy/cmake/rospyConfig-version.cmake
-/home/bobby/ME5413_Final_Project/devel/.private/rospy/lib/pkgconfig/rospy.pc /home/bobby/ME5413_Final_Project/devel/lib/pkgconfig/rospy.pc

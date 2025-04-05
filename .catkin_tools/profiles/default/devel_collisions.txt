@@ -1,2 +1,6 @@
+<<<<<<< HEAD
 /home/bobby/ME5413_Final_Project/devel/./cmake.lock 42
 /home/wang/ME5413_Final_Project/devel/./cmake.lock 3
+=======
+/home/bobby/ME5413_Final_Project/devel/./cmake.lock 50
+>>>>>>> update late night

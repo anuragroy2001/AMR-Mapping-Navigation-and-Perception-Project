@@ -19,7 +19,8 @@ class BoxCoordinates():
         self.bridge = CvBridge()
         self.processing = False
 
-        self.depth_thresh = 100
+        self.depth_thresh = 15
+        self.depth_thresh_close = 1 #TODO: change the threshold values
         self.listener = tf.TransformListener()
         self.camera_info = rospy.wait_for_message("/front/rgb/camera_info", CameraInfo)
         self.img_frame = self.camera_info.header.frame_id
@@ -31,7 +32,7 @@ class BoxCoordinates():
         self.rgb_sub = message_filters.Subscriber("/front/rgb/image_raw", Image)
         self.depth_sub = message_filters.Subscriber('/front/depth/image_raw', Image)
 
-        self.number = None
+        self.number = 8
         self.coords = []
         self.num_freq_sub = rospy.Subscriber("/percep/numberData", Int32MultiArray, self.get_number)
 
@@ -43,7 +44,10 @@ class BoxCoordinates():
 
     def get_number(self, msg):
         freq_array = np.array(msg.data)
-        self.number = np.where(freq_array > 0)[0][np.argmin(freq_array[freq_array > 0])]
+        number=np.where(freq_array > 0)[0][np.argmin(freq_array[freq_array > 0])]
+        #if self.number is not None:
+            #rospy.loginfo("The least occuring number is %s",number)
+        self.number = number
         return
 
     def synced_images_callback(self, rgb_data, depth_data):
@@ -70,10 +74,8 @@ class BoxCoordinates():
             self.processing = False
     
     def get_coords(self):
-        depth_thresh = self.depth_thresh
-
         if self.img_curr is None:
-                rospy.logwarn("No image detected for processing..")
+                #rospy.logwarn("No image detected for processing..")
                 return
         if self.number is None:
             rospy.logwarn("Number not received yet from /percep/numberData. Skipping frame.")
@@ -99,11 +101,11 @@ class BoxCoordinates():
 
                 if 0 <= y_center < self.depth_curr.shape[0] and 0 <= x_center < self.depth_curr.shape[1]:
                     depth = self.depth_curr[y_center, x_center]
-                    if not np.isfinite(depth) or depth <= 0 or depth > depth_thresh:
-                        rospy.logwarn(f"Invalid or out-of-range depth at ({x_center}, {y_center}): {depth}")
+                    if not np.isfinite(depth) or depth < self.depth_thresh_close or depth > self.depth_thresh:
+                        #rospy.logwarn(f"Invalid or out-of-range depth at ({x_center}, {y_center}): {depth}")
                         continue
                 
-                rospy.loginfo("Close number detected, proceeding to transform coordinates and perform checks!!!!")
+                #rospy.loginfo("Close number detected, proceeding to transform coordinates and perform checks!!!!")
                 X = (x_center - cx) * depth / fx
                 Y = (y_center - cy) * depth / fy
                 Z = depth
@@ -119,7 +121,7 @@ class BoxCoordinates():
                 try:
                     self.listener.waitForTransform("map", self.img_frame, self.img_stamp, rospy.Duration(1.0))
                     transformed_pose = self.listener.transformPose("map", p_in_cam)
-                    rospy.loginfo("Transformed to 'map' frame")
+                    #rospy.loginfo("Transformed to 'map' frame")
 
                 except tf.Exception as e_map:
                     # rospy.logwarn(f"TF error transforming to 'map': {e_map}")
@@ -127,19 +129,17 @@ class BoxCoordinates():
                     try:
                         self.listener.waitForTransform("odom", self.img_frame, self.img_stamp, rospy.Duration(1))
                         transformed_pose = self.listener.transformPose("odom", p_in_cam)
-                        rospy.loginfo("Transformed to 'odom' frame")
+                        #rospy.loginfo("Transformed to 'odom' frame")
                     
                     except tf.Exception as e_odom:
-                        rospy.logerr(f"TF error transforming to both 'map' and 'odom'. Skipping this detection.")
+                        #rospy.logerr(f"TF error transforming to both 'map' and 'odom'. Skipping this detection.")
                         continue
                 
                 X,Y,Z = transformed_pose.pose.position.x, transformed_pose.pose.position.y, transformed_pose.pose.position.z
-
+                frame_id = transformed_pose.header.frame_id
                 self.coords.append((X,Y,Z))
                 if len(self.coords)>=10:
                     del self.coords[0]
-                     
-        
         #rospy.loginfo(f"The coordinates of {self.number} detected till now are: {self.coords}")
 
         if self.coords:
@@ -149,14 +149,14 @@ class BoxCoordinates():
             return
 
         final_coords = PoseStamped()
-        final_coords.header.frame_id = transformed_pose.header.frame_id
+        final_coords.header.frame_id = self.img_frame
         final_coords.pose.position.x = final_x
         final_coords.pose.position.y = final_y
         final_coords.pose.position.z = final_z
         final_coords.pose.orientation.w = 1
 
         self.box_coord_pub.publish(final_coords)
-        rospy.loginfo(f"Published average coordinates for number {self.number}: ({final_x:.2f}, {final_y:.2f}, {final_z:.2f})")
+        #rospy.loginfo(f"Published average coordinates for number {self.number}: ({final_x:.2f}, {final_y:.2f}, {final_z:.2f})")
 
 
         return

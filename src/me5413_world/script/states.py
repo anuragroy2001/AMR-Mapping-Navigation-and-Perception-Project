@@ -13,6 +13,8 @@ from threading import Thread
 from cone_perception import ConeDetection
 import tf
 from box_coordinates import BoxCoordinates
+import subprocess
+import rosnode
 
 
 class Jackal_Robot():
@@ -47,17 +49,17 @@ class Jackal_Robot():
         current_state = self.client.get_state()
 
         #Update log when state changes
-        if current_state != last_state:
-            rospy.loginfo("Navigation state: %s", actionlib.GoalStatus.to_string(current_state))
+        #if current_state != last_state:
+            #rospy.loginfo("Navigation state: %s", actionlib.GoalStatus.to_string(current_state))
 
         # Handle final states
         if current_state == actionlib.GoalStatus.SUCCEEDED:
-            rospy.loginfo("Goal reached!")
+            #rospy.loginfo("Goal reached!")
             terminate_token=True
             current_state='goal_reached'
         elif current_state in [actionlib.GoalStatus.PREEMPTED, actionlib.GoalStatus.ABORTED,
                                 actionlib.GoalStatus.REJECTED, actionlib.GoalStatus.RECALLED]:
-            rospy.loginfo("Navigation failed with state: %s", actionlib.GoalStatus.to_string(current_state))
+            #rospy.loginfo("Navigation failed with state: %s", actionlib.GoalStatus.to_string(current_state))
             terminate_token=True
             current_state='failed'
         return current_state,terminate_token
@@ -121,7 +123,8 @@ class Task2_exploration(smach.State):
         smach.State.__init__(self,outcomes=['goal_reached','failed','stopped'])
         self.robot=Jackal_Robot()
         self.waypoint_list=waypoint_list
-
+        self.start_waypoint=[19, -21, 0.0, 0.0, 0.0, -1.0, 0.0]
+        self.waypoint_num=1
     
     def execute(self,userdata):
         rospy.loginfo("Executing Task2_exploration")
@@ -131,27 +134,33 @@ class Task2_exploration(smach.State):
 
             if not self.robot.wait_for_server():
                 return 'failed'
-            
-            for waypoint in self.waypoint_list:
+            waypoint=self.start_waypoint
+            while waypoint[1]<-3:
                 self.robot.send_goal(waypoint)
-                rospy.loginfo("Sent waypoint number %s", self.waypoint_list.index(waypoint)+1)
                 start_time = rospy.Time.now()
                 last_state=None
 
                 while not rospy.is_shutdown():
                     last_state,terminate_token=self.robot.check_state(last_state)
                     if terminate_token:
-                        if last_state=='goal_reached' and waypoint != self.waypoint_list[-1]:
-                            rospy.loginfo(f"Waypoint number {self.waypoint_list.index(waypoint)+1} reached!" )
+                        if last_state=='goal_reached':
                             break
-                        else:
-                            return last_state
 
                     # Check timeout
                     if self.robot.check_timeout(start_time):
                         return 'failed'
 
                     rospy.sleep(0.01)
+                if waypoint[0] == 19:
+                    waypoint[0] = 10
+                else:
+                    waypoint[0] = 19
+                waypoint[1] += 1.5
+                self.waypoint_num+=1
+            
+            return 'goal_reached'
+
+
         except rospy.ROSInterruptException:
             # If we exit while loop due to shutdown
             rospy.logerr("ROS Interrupt Exception")
@@ -172,7 +181,7 @@ class Task3_move_to_bridge(smach.State):
         self.data_received = msg
 
     def extract_msg(self,msg):
-        return [10, msg.point.y, 0,0,0,-1,0]
+        return [9, msg.point.y, 0,0,0,-1,0]
         
 
     def execute(self,userdata):
@@ -187,7 +196,7 @@ class Task3_move_to_bridge(smach.State):
                         return 'failed'
                     else:
                         self.robot.send_goal(self.cone_coor)
-                        rospy.loginfo("Sent goal to move_base")
+                        #rospy.loginfo("Sent goal to move_base")
 
                 last_state,terminate_token=self.robot.check_state(last_state)
                 if terminate_token:
@@ -226,13 +235,13 @@ class Task4_unlock_bridge(smach.State):
                 start_time = rospy.Time.now()
                 while (rospy.Time.now() - start_time).to_sec() < self.timeout/self.connection_retries:
                     if self.publisher.get_num_connections() > 0:
-                        rospy.loginfo("Connected to /cmd_open_bridge subscribers")
+                        #rospy.loginfo("Connected to /cmd_open_bridge subscribers")
                         return True
-                    rospy.loginfo("Waiting for connection to /cmd_open_bridge subscribers...")
+                    #rospy.loginfo("Waiting for connection to /cmd_open_bridge subscribers...")
                     rospy.sleep(1)
-                rospy.logwarn(f"Connection attempt {attempt+1} failed")
+                #rospy.logwarn(f"Connection attempt {attempt+1} failed")
             return False
-
+    
     def execute(self,userdata):
         if not self.wait_for_connection():
             rospy.logerr("Failed to connect to subscribers for topic /cmd_open_bridge")
@@ -242,16 +251,14 @@ class Task4_unlock_bridge(smach.State):
             while self.current_pose is None or self.current_pose > 8:
                 self.robot.move_forward(vel_x=0.5)
                 self.current_pose=self.get_current_x_position()
-                rospy.loginfo("Current x position: %s", self.current_pose)
                 rospy.sleep(0.1)
             rospy.loginfo("Robot has moved to front of cone")
             self.publisher.publish(self.ros_msg)
             rospy.loginfo("Published message to topic:/cmd_open_bridge")
             rospy.sleep(0.05)  # Wait for a moment to ensure the message is received
             while self.current_pose is None or self.current_pose > 5:
-                self.robot.move_forward(vel_x=1.5)
+                self.robot.move_forward(vel_x=0.7)
                 self.current_pose=self.get_current_x_position()
-                rospy.loginfo("Current x position: %s", self.current_pose)
                 rospy.sleep(0.1)
             rospy.loginfo("Robot has passed the bridge")
             return 'done'
@@ -265,13 +272,14 @@ class Task5_choose_box(smach.State):
         self.robot=Jackal_Robot()
         self.waypoint_list=box_waypoint_list
         self.timeout = 10  # seconds
-        self.box_coord_sub=rospy.Subscriber("/percep/bfailedox_coord", PoseStamped,self.box_coordinates_callback)
+
+        self.box_coord_sub=rospy.Subscriber("/percep/box_coord", PoseStamped,self.box_coordinates_callback)
         self.box_y_coordinate=None
         
     def box_coordinates_callback(self, msg):
         if self.box_y_coordinate is None:
             self.box_y_coordinate = msg.pose.position.y
-            rospy.loginfo("Received box coordinates: %s", self.box_y_coordinate)
+            #rospy.loginfo("Received box coordinates: %s", self.box_y_coordinate)
 
     
     
@@ -285,28 +293,58 @@ class Task5_choose_box(smach.State):
                     last_state,_=self.robot.check_state(last_state)
                     rospy.sleep(0.1)
                     if last_state=='goal_reached':
-                        rospy.loginfo("goal_reached")
-                        rospy.sleep(0.1)
-                    break
+                        #rospy.loginfo("goal_reached")
+                        rospy.sleep(2)
+                        break
                 if self.box_y_coordinate is not None:
-                    self.robot.send_goal([1,self.box_y_coordinate,0,0,0,-1,0])
+                    self.robot.send_goal([1.8,self.box_y_coordinate,0,0,0,-1,0])
                     break
+                else:
+                    continue
             while not rospy.is_shutdown():
+                terminate_token=False
                 last_state,terminate_token=self.robot.check_state(last_state)
                 rospy.sleep(0.5)
                 if terminate_token:
                     return last_state
-
-
-
-
+                
         except Exception as e:
-            return 'stopped'
-            
+            return 'stopped' 
 
+# class Task5_change_map(smach.State):
+#     def __init__(self):            
+#         smach.State.__init__(self,outcomes=['map_changed','stopped','failed'])
+#         self.robot=Jackal_Robot()
+#         self.timeout = 10  # seconds
+#         self.tf_listener = tf.TransformListener()
+#         self.pose=None
+        
+#     def get_current_pose(self):
+#         try:
+#             (trans, rot) = self.tf_listener.lookupTransform('map', 'base_link', rospy.Time(0))
+
+#         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
+#             rospy.logerr("Could not get robot pose: %s", e)
+#             return None
+        
     
+#     def execute(self,userdata):
+#         try:
+#             rospy.loginfo("Switching maps...")
+#             if '/map_server' in rosnode.get_node_names():
+#                 rospy.loginfo("Killing old map_server...")
+#                 subprocess.call(['rosnode', 'kill', '/map_server'])
+#                 rospy.sleep(1)
+#             rospy.loginfo("Launching new map: %s", self.new_map_launch)
+#             self.process = subprocess.Popen(['roslaunch', self.new_map_launch])
+#             rospy.sleep(3.0)  # Wait for the map to load   
+
+#         except Exception as e:
+#             pass
+
+
 
 
 if __name__=="__main__":        
 
-    pass
+    pass 

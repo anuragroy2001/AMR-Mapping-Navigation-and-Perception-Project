@@ -1,5 +1,0 @@
-std_msgs
-/home/bobby/ME5413_Final_Project/devel/.private/std_msgs/cmake.lock /home/bobby/ME5413_Final_Project/devel/./cmake.lock
-/home/bobby/ME5413_Final_Project/devel/.private/std_msgs/share/std_msgs/cmake/std_msgsConfig-version.cmake /home/bobby/ME5413_Final_Project/devel/share/std_msgs/cmake/std_msgsConfig-version.cmake
-/home/bobby/ME5413_Final_Project/devel/.private/std_msgs/share/std_msgs/cmake/std_msgsConfig.cmake /home/bobby/ME5413_Final_Project/devel/share/std_msgs/cmake/std_msgsConfig.cmake
-/home/bobby/ME5413_Final_Project/devel/.private/std_msgs/lib/pkgconfig/std_msgs.pc /home/bobby/ME5413_Final_Project/devel/lib/pkgconfig/std_msgs.pc

@@ -15,15 +15,16 @@ from std_msgs.msg import Int32MultiArray
 class Image_segmentation:
     def __init__(self, rate=10):
         rospy.loginfo(f" Running rate: {rate}")
-        rospy.loginfo("Running Initializing Image Segmentation Node")
         self.bridge = CvBridge()
         self.rate = rospy.Rate(rate)
         self.detected_numbers_positions = {}
         self.processing = False
-        self.detected_numbers= {}
 
-        self.depth_thresh = 100 #TODO: change the threshold values
+        # TODO: Fiddle with the following thresholds for better accuracy
+        self.depth_thresh = 100 
+        self.depth_thresh_close = 1 
         self.distance_thresh = 7.0
+        self.margin = 10
 
         self.listener = tf.TransformListener()
         self.camera_info = rospy.wait_for_message("/front/rgb/camera_info", CameraInfo)
@@ -38,7 +39,7 @@ class Image_segmentation:
         self.depth_sub = message_filters.Subscriber('/front/depth/image_raw', Image)
 
         #Publisher
-        self.number_database = rospy.Publisher("/percep/numberData", Int32MultiArray, queue_size=1)
+        self.number_database = rospy.Publisher("/percep/numberData", Int32MultiArray, queue_size=1, latch=True)
         
         self.ats = message_filters.ApproximateTimeSynchronizer([self.rgb_sub, self.depth_sub], 10, 0.01)
         self.ats.registerCallback(self.synced_images_callback) 
@@ -53,13 +54,13 @@ class Image_segmentation:
             #rospy.loginfo(f"Received synced images: RGB shape={rgb_data.height}x{rgb_data.width}, encoding={rgb_data.encoding}")
             self.img_stamp = rgb_data.header.stamp
 
+            #print("Converting ROS image to OpenCV image")
             self.img_curr = self.bridge.imgmsg_to_cv2(rgb_data, "bgr8")  # Changed to "bgr8" for consistency
             self.depth_curr = self.bridge.imgmsg_to_cv2(depth_data, desired_encoding="32FC1")
+            #print(f"OpenCV image shape: {self.img_curr.shape}, Depth image shape: {self.depth_curr.shape}")
 
-            self.ocr_detection_tranfrom()
-            if self.detected_numbers !=self.detected_numbers_positions:
-                rospy.loginfo(f"The current number dictionary is this: {self.detected_numbers_positions}")
-                self.detected_numbers = self.detected_numbers_positions.copy()
+            detected_numbers = self.ocr_detection_tranfrom()
+            #rospy.loginfo(f"The current number dictionary is this: {detected_numbers}")
 
         except CvBridgeError as e:
             print(f"CvBridge error: {e}")
@@ -70,11 +71,12 @@ class Image_segmentation:
     def ocr_detection_tranfrom(self): 
         """Detect all the numbers in the current frame
             Apply depth thresholding on all the BB and choose the close ones"""
-        depth_thresh = self.depth_thresh
         if self.img_curr is None:
                 rospy.logwarn("No image detected for processing..")
                 return
+        #rospy.loginfo("Image detected, using ocr to detect numbers.....")
         result = self.ocr_detector.readtext(self.img_curr, batch_size=2, allowlist="0123456789")
+        #rospy.loginfo("Numbers detected, proceeding to filter and transfrom.....")
         fx = self.camera_info.K[0]
         fy = self.camera_info.K[4]
         cx = self.camera_info.K[2]
@@ -93,11 +95,22 @@ class Image_segmentation:
 
             if 0 <= y_center < self.depth_curr.shape[0] and 0 <= x_center < self.depth_curr.shape[1]:
                 depth = self.depth_curr[y_center, x_center]
-                if not np.isfinite(depth) or depth <= 0 or depth > depth_thresh:
+
+                if not np.isfinite(depth) or depth < self.depth_thresh_close or depth > self.depth_thresh:
                     #rospy.logwarn(f"Invalid or out-of-range depth at ({x_center}, {y_center}): {depth}")
                     continue
-                
-            #rospy.loginfo("Close number detected, proceeding to transform coordinates and perform checks")
+            
+            if (
+                x_center < self.margin or x_center > self.img_curr.shape[1] - self.margin or
+                y_center < self.margin or y_center > self.img_curr.shape[0] - self.margin
+            ):
+                rospy.logdebug(f"Skipping digit at edge: ({x_center}, {y_center})")
+                continue
+            
+            if detection[1] in {"0"}:
+                continue
+
+            #rospy.loginfo("Close number detected, proceeding to transform coordinates and perform checks!!!!")
             X = (x_center - cx) * depth / fx
             Y = (y_center - cy) * depth / fy
 
@@ -116,19 +129,27 @@ class Image_segmentation:
             try:
                 self.listener.waitForTransform("map", self.img_frame, self.img_stamp, rospy.Duration(1.0))
                 transformed_pose = self.listener.transformPose("map", p_in_cam)
+                #rospy.loginfo("Transformed to 'map' frame")
 
             except tf.Exception as e_map:
+                # rospy.logwarn(f"TF error transforming to 'map': {e_map}")
 
                 try:
                     self.listener.waitForTransform("odom", self.img_frame, self.img_stamp, rospy.Duration(1))
                     transformed_pose = self.listener.transformPose("odom", p_in_cam)
+                    #rospy.loginfo("Transformed to 'odom' frame")
                 
                 except tf.Exception as e_odom:
-                    rospy.logerr(f"TF error transforming to both 'map' and 'odom'. Skipping this detection.")
+                    #rospy.logerr(f"TF error transforming to both 'map' and 'odom'. Skipping this detection.")
                     continue
             
             X,Y,Z = transformed_pose.pose.position.x, transformed_pose.pose.position.y, transformed_pose.pose.position.z
 
+            """Now that you have transformed pose - store it in dictionary along with the number!!"""
+            # rospy.loginfo("The odom position of this BB is  x={}, y={}, z={}".format(
+            # transformed_pose.pose.position.x,
+            # transformed_pose.pose.position.y,
+            # transformed_pose.pose.position.z))
 
             if detection[1].isdigit() and 0 <= int(detection[1]) <= 9:
                 number = int(detection[1])
@@ -151,6 +172,7 @@ class Image_segmentation:
             
             self.detected_numbers_positions[number].append((X, Y, Z))
             rospy.loginfo(f"New: {number} detected at ({X:.2f}, {Y:.2f}, {Z:.2f}), processing...")
+            rospy.loginfo(self.detected_numbers_positions)
 
             self.num_freq_pub(self.detected_numbers_positions)
 

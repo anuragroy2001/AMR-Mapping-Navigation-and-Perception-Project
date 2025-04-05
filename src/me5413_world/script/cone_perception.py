@@ -196,7 +196,6 @@ class ConeDetection():
             avg_point.point.z = avg_pos[2]
 
             self.avg_pub.publish(avg_point)
-            #rospy.loginfo("Average Position Published to cone_expected_position")
 
         except Exception as e:
             rospy.logwarn(f"[TF ERROR] Cone detection transform failed: {str(e)}")

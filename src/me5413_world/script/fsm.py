@@ -4,22 +4,13 @@ import rospy
 from states import Task1_obs_avoid_nav, Task2_exploration, Task3_move_to_bridge, Task4_unlock_bridge, Task5_choose_box
 
 
-exploration_waypoint_list = [
-    [19, -21, 0.0, 0.0, 0.0, -1.0, 0.0],
-    [10, -21, 0.0, 0.0, 0.0, -1.0, 0.0],
-    [10, -18, 0.0, 0.0, 0.0, 0.707, 0.707],
-    [19, -18, 0.0, 0.0, 0.0, 0.0, 1.0],
-    [19, -14, 0.0, 0.0, 0.0, 0.7, 0.7],
-    [10, -14, 0.0, 0.0, 0.0, -1.0, 0.0],
-    [10, -10,  0.0, 0.0, 0.0, 0.7, 0.7],
-    [19, -10,  0.0, 0.0, 0.0, 0.0, 1.0
-    [19, -6,  0.0, 0.0, 0.0, 0.7, 0.7],
-    [10, -6,  0.0, 0.0, 0.0, -1.0, 0.0],
-    [10, -3,  0.0, 0.0, 0.0, 0.7, 0.7],
-    [19, -3,  0.0, 0.0, 0.0, -1.0, 0.0]]
+exploration_waypoint_list = []
 
-final_box_waypoint_list = [[4.5, -8, 0.0, 0.0, 0.0, -1.0, 0.0],
-                            [4.5, -16, 0.0, 0.0, 0.0, -1.0, 0.0]]
+
+final_box_waypoint_list = [[3.5, -6, 0.0, 0.0, 0.0, -1.0, 0.0],
+                            [3.5, -10, 0.0, 0.0, 0.0, -1.0, 0.0],
+                            [3.5, -14, 0.0, 0.0, 0.0, -1.0, 0.0],
+                            [3.5, -18, 0.0, 0.0, 0.0, -1.0, 0.0]]
 
 
 
@@ -35,7 +26,8 @@ def main():
     # Execute SMACH plan
     sm.execute()
     
-    # Wait for ctrl-c to stop the application
+    # Wait for ctrl-c to stop the application        
+
     rospy.spin()
 
 

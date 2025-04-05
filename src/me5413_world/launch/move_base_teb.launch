@@ -12,7 +12,10 @@
     <rosparam file="$(find me5413_world)/params/teb_planner/teb_planner_param.yaml" command="load" />
     <rosparam file="$(find me5413_world)/params/teb_planner/costmap_converter_params.yaml" command="load" />
 
-    <param name="base_global_planner" type="string" value="navfn/NavfnROS" />
+    <!-- <param name="base_global_planner" type="string" value="navfn/NavfnROS" /> -->
+    <param name="base_global_planner" type="string" value="global_planner/GlobalPlanner" />
+    <!-- <param name="base_global_planner" type="string" value="global_planner/RRTGlobalPlanner" />
+    <rosparam file="$(find rrt-global-planner)/params/rrt_global_planner.yaml" command="load" /> -->
     <param name="planner_frequency" value="1.0" />
 
     <param name="base_local_planner" value="teb_local_planner/TebLocalPlannerROS" />
