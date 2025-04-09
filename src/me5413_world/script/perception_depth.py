@@ -200,12 +200,14 @@ class Image_segmentation:
                 continue
             
             too_close_to_other_number = False
+
             for other_number, positions in self.detected_numbers_positions.items():
                 if other_number == number:
                     continue  # already checked above
                 for pos in positions:
-                    dist = np.linalg.norm([pos[0] - X, pos[1] - Y, pos[2] - Z])
-                    if dist < self.too_close_thresh:
+                    dx = abs(pos[0] - X)
+                    dy = abs(pos[1] - Y)
+                    if dx < self.too_close_thresh or dy < self.too_close_thresh:
                         too_close_to_other_number = True
                         break
                 if too_close_to_other_number:
