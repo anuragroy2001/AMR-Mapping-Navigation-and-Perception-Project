@@ -186,7 +186,7 @@ rosrun map_server map_saver
 ```bash
 roslaunch me5413_world navigation_teb.launch
 ```
-
+If there is an issue with the rviz Control panel for spwanning objects, remove the third part folder, clear build and devel, and catkin_make again. Fix still pending
 ---
 
 ### 4. FSM
