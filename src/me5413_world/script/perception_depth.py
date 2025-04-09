@@ -81,6 +81,22 @@ class Image_segmentation:
             y_coords = [int(point[1]) for point in bbox]
             top_left = (min(x_coords), min(y_coords))
             bottom_right = (max(x_coords), max(y_coords))
+            x_center = int(sum(x_coords) / len(x_coords))
+            y_center = int(sum(y_coords) / len(y_coords))
+
+            if (
+                0 <= y_center < self.depth_curr.shape[0]
+                and 0 <= x_center < self.depth_curr.shape[1]
+            ):
+                depth = self.depth_curr[y_center, x_center]
+                if (
+                    not np.isfinite(depth)
+                    or depth < self.depth_thresh_close
+                    or depth > self.depth_thresh
+                ):
+                    continue 
+            else:
+                continue
 
             cv2.rectangle(image_copy, top_left, bottom_right, (0, 255, 0), 2)
             cv2.putText(image_copy, number, (top_left[0], top_left[1] - 10),
