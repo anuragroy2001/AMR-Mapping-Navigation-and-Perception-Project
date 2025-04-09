@@ -25,6 +25,7 @@ class Image_segmentation:
         self.depth_thresh_close = 1 
         self.distance_thresh = 7.0
         self.margin = 10
+        self.too_close_thresh = 0.6 # checks against all the numbers!!
 
         self.listener = tf.TransformListener()
         self.camera_info = rospy.wait_for_message("/front/rgb/camera_info", CameraInfo)
@@ -40,6 +41,8 @@ class Image_segmentation:
 
         #Publisher
         self.number_database = rospy.Publisher("/percep/numberData", Int32MultiArray, queue_size=1, latch=True)
+        self.image_pub = rospy.Publisher("/percep/annotated_image", Image, queue_size=1) # For debugging
+
         
         self.ats = message_filters.ApproximateTimeSynchronizer([self.rgb_sub, self.depth_sub], 10, 0.01)
         self.ats.registerCallback(self.synced_images_callback) 
@@ -68,6 +71,31 @@ class Image_segmentation:
         finally: 
              self.processing = False
     
+    def visualize(self, result):
+        image_copy = self.img_curr.copy()
+        for detection in result:
+            bbox, number, conf = detection
+            if len(number) > 1 or conf < 0.99:
+                continue
+            x_coords = [int(point[0]) for point in bbox]
+            y_coords = [int(point[1]) for point in bbox]
+            top_left = (min(x_coords), min(y_coords))
+            bottom_right = (max(x_coords), max(y_coords))
+
+            cv2.rectangle(image_copy, top_left, bottom_right, (0, 255, 0), 2)
+            cv2.putText(image_copy, number, (top_left[0], top_left[1] - 10),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 0, 0), 2)
+            
+        try:
+            img_msg = self.bridge.cv2_to_imgmsg(image_copy, encoding="bgr8")
+            self.image_pub.publish(img_msg)
+        except CvBridgeError as e:
+            rospy.logerr(f"Failed to convert/publish image: {e}")
+        return
+            
+
+
+    
     def ocr_detection_tranfrom(self): 
         """Detect all the numbers in the current frame
             Apply depth thresholding on all the BB and choose the close ones"""
@@ -76,6 +104,7 @@ class Image_segmentation:
                 return
         #rospy.loginfo("Image detected, using ocr to detect numbers.....")
         result = self.ocr_detector.readtext(self.img_curr, batch_size=2, allowlist="0123456789")
+        self.visualize(result)
         #rospy.loginfo("Numbers detected, proceeding to filter and transfrom.....")
         fx = self.camera_info.K[0]
         fy = self.camera_info.K[4]
@@ -170,6 +199,22 @@ class Image_segmentation:
                 #rospy.loginfo(f"Number:{number} at ({X:.2f}, {Y:.2f}, {Z:.2f}) already detected. Skipping.")
                 continue
             
+            too_close_to_other_number = False
+            for other_number, positions in self.detected_numbers_positions.items():
+                if other_number == number:
+                    continue  # already checked above
+                for pos in positions:
+                    dist = np.linalg.norm([pos[0] - X, pos[1] - Y, pos[2] - Z])
+                    if dist < self.too_close_thresh:
+                        too_close_to_other_number = True
+                        break
+                if too_close_to_other_number:
+                    break
+
+            if too_close_to_other_number:
+                rospy.loginfo(f"Detection {number} is too close to another number. Ignoring.")
+                continue
+
             self.detected_numbers_positions[number].append((X, Y, Z))
             rospy.loginfo(f"New: {number} detected at ({X:.2f}, {Y:.2f}, {Z:.2f}), processing...")
             rospy.loginfo(self.detected_numbers_positions)
