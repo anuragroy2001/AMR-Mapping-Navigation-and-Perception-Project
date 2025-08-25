@@ -1,6 +1,6 @@
-# ME5413_Final_Project
+Final_Project
 
-NUS ME5413 Autonomous Mobile Robotics Final Project  
+Autonomous Mobile Robotics Final Project  
 > Authors: [Anurag Roy](https://github.com/anuragroy2001), [Ariel Hu](https://github.com/loggcc), [Chun Pok Lam](https://github.com/bobbylammy71446307), [Jinhan Xue](https://github.com/tchb0910), [Praveen Krishnapur](https://github.com/Praveen8978), and [Yurong Liu](https://github.com/liuyurong129)
 
 ![Ubuntu 20.04](https://img.shields.io/badge/OS-Ubuntu_20.04-informational?style=flat&logo=ubuntu&logoColor=white&color=2bbc8a)
