@@ -15,7 +15,6 @@
 
 ## Dependencies
 
-https://github.com/user-attachments/assets/3b7655db-b383-43c1-86e8-deab849b5bab
 
 
 
